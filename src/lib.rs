@@ -1,27 +1,27 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use std::thread::sleep;
-use std::env;
+use std::{env, process};
 
 mod config;
 
 fn set_alarm(time: u64, url: &String) {
-    let now = Instant::now();
     sleep(Duration::new(time, 0));
-    open::that(url);
+    open::that(url).unwrap_or_else(|err| {
+        println!("Error occured when opening url: {}", err);
+        process::exit(1)
+    });
 }
 
 fn gen_config() -> config::Config {
-    let args: Vec<String> = env::args().collect();
-
-    let time = args[1].clone().parse::<u64>().unwrap();
-    let url = args[2].clone();
-
-    let config = config::Config::new(time, url);
+    let config = config::Config::new(env::args()).unwrap_or_else(|err| {
+        println!("Problem occured when parsing the arguments: {}", err);
+        process::exit(1)
+    });
 
     config
 }
 
 pub fn run() {
-    let config = gen_config();
-    set_alarm(config.time, &config.url);
+    let config::Config {time, url} = gen_config();
+    set_alarm(time, &url);
 }
